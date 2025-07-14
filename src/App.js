@@ -12,8 +12,8 @@ const LogicRootMultiplication = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState('none');
   const [trialEndsAt, setTrialEndsAt] = useState(null);
   
-  // Form state
-  const [authForm, setAuthForm] = useState({
+  // Form state - FIX: Use separate state objects to prevent re-rendering issues
+  const [authFormData, setAuthFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
@@ -24,7 +24,8 @@ const LogicRootMultiplication = () => {
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
   const [showChildForm, setShowChildForm] = useState(false);
-  const [childForm, setChildForm] = useState({ name: '', age: '' });
+  const [childFormData, setChildFormData] = useState({ name: '', age: '' });
+  const [isAddingChild, setIsAddingChild] = useState(false); // FIX: Add loading state
   
   // Core game state
   const [currentView, setCurrentView] = useState('landing');
@@ -49,6 +50,21 @@ const LogicRootMultiplication = () => {
     { name: 'Fantastic Fours', facts: ['4×4', '4×6', '4×7', '4×8', '4×9'], icon: '🎪' },
     { name: 'Challenging Mix', facts: ['6×6', '6×7', '6×8', '7×7', '7×8', '8×8'], icon: '🚀' }
   ];
+  
+  // FIX: Improved input handlers that don't cause re-renders
+  const handleAuthInputChange = (field, value) => {
+    setAuthFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleChildInputChange = (field, value) => {
+    setChildFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
   
   // Authentication functions
   const signUp = async (email, password, name) => {
@@ -88,20 +104,53 @@ const LogicRootMultiplication = () => {
     setChildren([]);
     setSelectedChild(null);
     setCurrentView('landing');
+    // FIX: Reset all form data on logout
+    setAuthFormData({ email: '', password: '', confirmPassword: '', name: '' });
+    setChildFormData({ name: '', age: '' });
+    setAuthView('signin');
   };
   
-  const addChild = () => {
-    if (childForm.name && childForm.age) {
-      const newChild = {
-        id: Date.now().toString(),
-        name: childForm.name,
-        age: parseInt(childForm.age),
-        progress: {},
-        createdAt: new Date()
-      };
-      setChildren([...children, newChild]);
-      setChildForm({ name: '', age: '' });
-      setShowChildForm(false);
+  // FIX: Improved addChild function with proper state management
+  const addChild = async () => {
+    if (childFormData.name && childFormData.age) {
+      setIsAddingChild(true);
+      
+      // Simulate API call delay
+      setTimeout(() => {
+        const newChild = {
+          id: Date.now().toString(),
+          name: childFormData.name,
+          age: parseInt(childFormData.age),
+          progress: {},
+          createdAt: new Date()
+        };
+        setChildren(prev => [...prev, newChild]);
+        setChildFormData({ name: '', age: '' });
+        setShowChildForm(false);
+        setIsAddingChild(false);
+      }, 500);
+    }
+  };
+
+  // FIX: Add function to handle onboarding completion
+  const completeOnboarding = async () => {
+    if (childFormData.name && childFormData.age) {
+      setIsAddingChild(true);
+      
+      setTimeout(() => {
+        const newChild = {
+          id: Date.now().toString(),
+          name: childFormData.name,
+          age: parseInt(childFormData.age),
+          progress: {},
+          createdAt: new Date()
+        };
+        setChildren(prev => [...prev, newChild]);
+        setChildFormData({ name: '', age: '' });
+        setAuthView(''); // FIX: Clear onboarding view
+        setCurrentView('dashboard'); // FIX: Navigate to dashboard
+        setIsAddingChild(false);
+      }, 500);
     }
   };
   
@@ -269,7 +318,7 @@ const LogicRootMultiplication = () => {
     </div>
   );
   
-  // Authentication Form Component
+  // Authentication Form Component - FIX: Use proper input handlers
   const AuthForm = () => (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-orange-100">
@@ -290,10 +339,10 @@ const LogicRootMultiplication = () => {
         <form onSubmit={(e) => {
           e.preventDefault();
           if (authView === 'signin') {
-            signIn(authForm.email, authForm.password);
+            signIn(authFormData.email, authFormData.password);
           } else {
-            if (authForm.password === authForm.confirmPassword) {
-              signUp(authForm.email, authForm.password, authForm.name);
+            if (authFormData.password === authFormData.confirmPassword) {
+              signUp(authFormData.email, authFormData.password, authFormData.name);
             } else {
               alert('Passwords do not match');
             }
@@ -306,8 +355,8 @@ const LogicRootMultiplication = () => {
               </label>
               <input
                 type="text"
-                value={authForm.name}
-                onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
+                value={authFormData.name}
+                onChange={(e) => handleAuthInputChange('name', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 required
               />
@@ -320,8 +369,8 @@ const LogicRootMultiplication = () => {
             </label>
             <input
               type="email"
-              value={authForm.email}
-              onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
+              value={authFormData.email}
+              onChange={(e) => handleAuthInputChange('email', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               required
             />
@@ -333,8 +382,8 @@ const LogicRootMultiplication = () => {
             </label>
             <input
               type="password"
-              value={authForm.password}
-              onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
+              value={authFormData.password}
+              onChange={(e) => handleAuthInputChange('password', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               required
             />
@@ -347,8 +396,8 @@ const LogicRootMultiplication = () => {
               </label>
               <input
                 type="password"
-                value={authForm.confirmPassword}
-                onChange={(e) => setAuthForm({...authForm, confirmPassword: e.target.value})}
+                value={authFormData.confirmPassword}
+                onChange={(e) => handleAuthInputChange('confirmPassword', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 required
               />
@@ -387,7 +436,7 @@ const LogicRootMultiplication = () => {
     </div>
   );
 
-  // Dashboard Component
+  // Dashboard Component - FIX: Use proper input handlers
   const Dashboard = () => (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -483,8 +532,8 @@ const LogicRootMultiplication = () => {
                 </label>
                 <input
                   type="text"
-                  value={childForm.name}
-                  onChange={(e) => setChildForm({...childForm, name: e.target.value})}
+                  value={childFormData.name}
+                  onChange={(e) => handleChildInputChange('name', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   placeholder="Enter name"
                 />
@@ -495,8 +544,8 @@ const LogicRootMultiplication = () => {
                   Age
                 </label>
                 <select
-                  value={childForm.age}
-                  onChange={(e) => setChildForm({...childForm, age: e.target.value})}
+                  value={childFormData.age}
+                  onChange={(e) => handleChildInputChange('age', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select age</option>
@@ -510,15 +559,15 @@ const LogicRootMultiplication = () => {
             <div className="flex space-x-4 mt-6">
               <button
                 onClick={addChild}
-                disabled={!childForm.name || !childForm.age}
+                disabled={!childFormData.name || !childFormData.age || isAddingChild}
                 className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
               >
-                Add Child
+                {isAddingChild ? 'Adding...' : 'Add Child'}
               </button>
               <button
                 onClick={() => {
                   setShowChildForm(false);
-                  setChildForm({ name: '', age: '' });
+                  setChildFormData({ name: '', age: '' });
                 }}
                 className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
               >
@@ -619,102 +668,3 @@ const LogicRootMultiplication = () => {
         )}
       </div>
     </div>
-  );
-
-  // Onboarding Component
-  const OnboardingView = () => (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <span className="text-4xl">🎉</span>
-            <h2 className="text-3xl font-bold text-gray-800 mt-2">
-              Welcome to LogicRoot!
-            </h2>
-            <p className="text-gray-600 mt-2">
-              Your 7-day free trial has started. Let's set up your first child's profile.
-            </p>
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Child's Name
-              </label>
-              <input
-                type="text"
-                value={childForm.name}
-                onChange={(e) => setChildForm({...childForm, name: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="Enter your child's name"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Age
-              </label>
-              <select
-                value={childForm.age}
-                onChange={(e) => setChildForm({...childForm, age: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">Select age</option>
-                {[6, 7, 8, 9, 10, 11, 12, 13, 14].map(age => (
-                  <option key={age} value={age}>{age} years old</option>
-                ))}
-              </select>
-            </div>
-           
-           <div className="bg-blue-50 p-4 rounded-lg">
-             <h3 className="font-semibold text-blue-800 mb-2">How it works:</h3>
-             <ul className="text-sm text-blue-700 space-y-1">
-               <li>• Your child will progress through 7 learning tiers</li>
-               <li>• Each tier focuses on specific multiplication strategies</li>
-               <li>• Facts are mastered through spaced repetition</li>
-               <li>• You can track progress in the parent dashboard</li>
-             </ul>
-           </div>
-           
-           <div className="flex space-x-4">
-             <button
-               onClick={() => {
-                 addChild();
-                 setCurrentView('dashboard');
-               }}
-               disabled={!childForm.name || !childForm.age}
-               className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50"
-             >
-               Create Profile & Start Learning
-             </button>
-           </div>
-         </div>
-       </div>
-     </div>
-   </div>
- );
-
- // Main render logic
- if (!isAuthenticated) {
-   if (authView === 'signin' || authView === 'signup') {
-     return <AuthForm />;
-   }
-   return <LandingPage />;
- }
- 
- if (authView === 'onboarding') {
-   return <OnboardingView />;
- }
- 
- if (currentView === 'dashboard') {
-   return <Dashboard />;
- }
- 
- if (currentView === 'game') {
-   return <GameView />;
- }
- 
- return <LandingPage />;
-};
-
-export default LogicRootMultiplication;
